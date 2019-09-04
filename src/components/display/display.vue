@@ -3,6 +3,8 @@
   <div ref="display"></div>
 </template>
 <script>
+  import Vue from 'vue'
+  import randomStr from '../../utils/random_str.js';
   export default {
     props: {
       code: {
@@ -17,6 +19,13 @@
         js: '',
         css: '',
         component: null,
+        id:randomStr()
+      }
+    },
+    watch:{
+      code(){
+        this.destroyCode();
+        this.renderCode();
       }
     },
     methods: {
@@ -57,11 +66,36 @@
           this.component = new Component().$mount();
 
           this.$refs.display.appendChild(this.component.$el);
+          // 处理css
+          if(this.css!==''){
+            const style=document.createElement('style');
+            style.type = 'text/css';
+            style.id = this.id;  // style添加id标识方便组件更新或销毁后对其处理
+            style.innerHTML = this.css;
+            document.getElementsByTagName('head')[0].appendChild(style);
+          }
         }
-      }
+      },
+      //当 Display 组件销毁时，也要手动销毁 extend 创建的实例以及上面的 css：
+      destroyCode(){
+        // 移除css
+        const $target = document.getElementById(this.id);
+        if ($target) $target.parentNode.removeChild($target);
+        // 移除内容
+        if (this.component) {
+          this.$refs.display.removeChild(this.component.$el);
+          //完全销毁一个实例。清理它与其它实例的连接，解绑它的全部指令及事件监听器。
+          this.component.$destroy();
+          this.component = null;
+        }
+      },
+      
     },
     mounted () {
       this.renderCode();
+    },
+    beforeDestroy(){
+      this.destroyCode();
     }
   }
 </script>
